@@ -61,6 +61,14 @@ in
       default = config.keyFile == null && config.passwordFile == null && (! config.settings ? "keyFile");
       description = "Whether to ask for a password for initial encryption";
     };
+    fido2Credentials = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [];
+      description = "Credentials to add to LUKS device";
+      example = ''[
+        "20ac978cc9151752c420320cd61ad14b";
+      ]'';
+    };
     settings = lib.mkOption {
       default = { };
       description = "LUKS settings (as defined in configuration.nix in boot.initrd.luks.devices.<name>)";
@@ -132,6 +140,10 @@ in
         ${toString (lib.forEach config.additionalKeyFiles (keyFile: ''
           cryptsetup luksAddKey ${config.device} ${keyFile} ${keyFileArgs}
         ''))}
+        ${toString (lib.forEach config.fido2Credentials (cred: ''
+          fido2luks add-key ${config.device} ${cred} systemd-tty-ask-password-agent
+        '')
+        }
         ${lib.optionalString (config.content != null) config.content._create}
       '';
     };
